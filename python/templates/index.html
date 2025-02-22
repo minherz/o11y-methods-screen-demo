@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>10 Fun facts from Gemini</title>
+    <style>
+        #response-container {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            display: none;
+            /* Initially hidden */
+        }
+
+        .error-message {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <input type="text" id="input-text" placeholder="Your animal">
+    <button id="send-button">Send</button>
+
+    <div id="response-container">
+    </div>
+
+    <script>
+        const sendButton = document.getElementById('send-button');
+        const inputText = document.getElementById('input-text');
+        const responseContainer = document.getElementById('response-container');
+
+        sendButton.addEventListener('click', async () => {
+            const inputValue = inputText.value;
+
+            // Clear previous content AND hide the container before the request
+            responseContainer.innerHTML = '';
+            responseContainer.style.display = 'none';
+
+            try {
+                const url = `/facts?animal=${encodeURIComponent(inputValue)}`;
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                });
+
+                if (response.ok) {
+                    const htmlResponse = await response.text();
+                    responseContainer.innerHTML = htmlResponse; // Set the new content
+                    responseContainer.style.display = 'block'; // Show after content is set
+                } else {
+                    const errorMessage = `Error: ${response.status} - ${response.statusText}`;
+                    displayError(errorMessage);
+                }
+            } catch (error) {
+                displayError(`Network Error: ${error.message}`);
+            }
+        });
+
+        function displayError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+
+            // Clear existing content *before* adding the new error message.
+            responseContainer.innerHTML = '';
+            responseContainer.appendChild(errorDiv);
+            responseContainer.style.display = 'block';
+        }
+    </script>
+
+</body>
+
+</html>
