@@ -26,7 +26,7 @@ function getCurrentSpan() {
 };
 
 const opentelemetry = require("@opentelemetry/api");
-const meter = opentelemetry.metrics.getMeter("genai-o11y/nodejs/workshop/example");
+const meter = opentelemetry.metrics.getMeter("o11y/demo/nodejs");
 const counter = meter.createCounter("model_call_counter");
 
 import path from 'path';

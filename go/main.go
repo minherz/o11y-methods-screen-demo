@@ -21,7 +21,7 @@ var model *genai.GenerativeModel
 var counter metric.Int64Counter
 var MetricLabels []attribute.KeyValue = []attribute.KeyValue{attribute.Key("language").String("go")}
 
-const scopeName = "otel/custom/go/o11y/demo"
+const scopeName = "o11y/demo/go"
 
 func main() {
 	ctx := context.Background()

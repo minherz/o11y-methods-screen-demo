@@ -46,7 +46,7 @@ meter_provider = MeterProvider(
     ],
 )
 metrics.set_meter_provider(meter_provider)
-meter = metrics.get_meter(__name__)
+meter = metrics.get_meter('o11y/demo/python')
 
 trace_provider = TracerProvider(resource=resource)
 processor = BatchSpanProcessor(CloudTraceSpanExporter(
