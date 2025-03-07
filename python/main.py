@@ -28,8 +28,6 @@ def index():
 
 @app.route('/facts')
 def fun_facts():
-    project='genai-with-internet-001'
-    region='us-central1'
     vertexai.init(project=project, location=region)
     model = GenerativeModel('gemini-1.5-flash')
     animal = request.args.get('animal', 'dog') 

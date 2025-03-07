@@ -9,8 +9,10 @@
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #202124; /* Dark gray background */
-            color: #e8eaed; /* Light gray text */
+            background-color: #202124;
+            /* Dark gray background */
+            color: #e8eaed;
+            /* Light gray text */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -21,45 +23,57 @@
         }
 
         h1 {
-            color: #8ab4f8; /* Light blue for heading */
+            color: #8ab4f8;
+            /* Light blue for heading */
             margin-bottom: 30px;
         }
 
         #input-container {
             display: flex;
-            gap: 10px; /* Spacing between input and button */
+            gap: 10px;
+            /* Spacing between input and button */
             width: 100%;
-            max-width: 500px; /* Limit width for better readability */
+            max-width: 500px;
+            /* Limit width for better readability */
             margin-bottom: 20px;
         }
 
         #input-text {
-            flex: 1; /* Take up available space */
+            flex: 1;
+            /* Take up available space */
             padding: 12px 16px;
             border: none;
-            border-radius: 24px; /* Rounded corners */
-            background-color: #3c4043; /* Slightly lighter gray */
+            border-radius: 24px;
+            /* Rounded corners */
+            background-color: #3c4043;
+            /* Slightly lighter gray */
             color: #e8eaed;
             font-size: 16px;
-            outline: none; /* Remove default focus outline */
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+            outline: none;
+            /* Remove default focus outline */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            /* Subtle shadow */
             transition: box-shadow 0.3s ease;
         }
 
         #input-text:focus {
-            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3); /* More prominent shadow on focus */
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+            /* More prominent shadow on focus */
         }
 
         #input-text::placeholder {
-            color: #9aa0a6; /* Lighter gray for placeholder */
+            color: #9aa0a6;
+            /* Lighter gray for placeholder */
         }
 
         #send-button {
             padding: 12px 24px;
             border: none;
             border-radius: 24px;
-            background-color: #8ab4f8; /* Light blue button */
-            color: #202124; /* Dark text on button */
+            background-color: #8ab4f8;
+            /* Light blue button */
+            color: #202124;
+            /* Dark text on button */
             font-size: 16px;
             font-weight: 500;
             cursor: pointer;
@@ -68,7 +82,8 @@
         }
 
         #send-button:hover {
-            background-color: #9ebcf9; /* Slightly lighter blue on hover */
+            background-color: #9ebcf9;
+            /* Slightly lighter blue on hover */
         }
 
         #response-container {
@@ -79,24 +94,35 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
             width: 100%;
             max-width: 500px;
-            display: none; /* Initially hidden */
-            overflow: hidden; /* Hide overflowing content during loading */
+            display: none;
+            /* Initially hidden */
+            overflow: hidden;
+            /* Hide overflowing content during loading */
+        }
+
+        #response-container li {
+            margin: 10px 0;
+            font-size: 18px;
         }
 
         .error-message {
-            color: #f44336; /* Red for error */
+            color: #f44336;
+            /* Red for error */
             margin-top: 10px;
         }
 
         /* Loading Spinner Styles */
         .loader {
-            border: 4px solid #f3f3f3; /* Light grey */
-            border-top: 4px solid #8ab4f8; /* Blue */
+            border: 4px solid #f3f3f3;
+            /* Light grey */
+            border-top: 4px solid #8ab4f8;
+            /* Blue */
             border-radius: 50%;
             width: 30px;
             height: 30px;
             animation: spin 1s linear infinite;
-            margin: 20px auto; /* Center the spinner */
+            margin: 20px auto;
+            /* Center the spinner */
         }
 
         @keyframes spin {
@@ -121,7 +147,7 @@
     </div>
 
     <div id="response-container">
-        </div>
+    </div>
 
     <script>
         const sendButton = document.getElementById('send-button');

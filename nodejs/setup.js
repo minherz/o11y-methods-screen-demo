@@ -5,8 +5,7 @@ import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk
 import { AlwaysOnSampler, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import {Resource} from '@opentelemetry/resources';
 import {ATTR_SERVICE_NAME} from '@opentelemetry/semantic-conventions';
-import pkg from '@fastify/otel';
-const {FastifyOtelInstrumentation} = pkg;
+import FastifyOtelInstrumentation from '@fastify/otel';
 import {HttpInstrumentation} from '@opentelemetry/instrumentation-http';
 import {TraceExporter} from '@google-cloud/opentelemetry-cloud-trace-exporter';
 import {MetricExporter} from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
