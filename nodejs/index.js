@@ -1,5 +1,5 @@
-import VertexAI from '@google-cloud/vertexai';
-import GoogleAuth from 'google-auth-library';
+import {VertexAI} from '@google-cloud/vertexai';
+import {GoogleAuth} from 'google-auth-library';
 
 let generativeModel, traceIdPrefix;
 const auth = new GoogleAuth();
@@ -12,10 +12,10 @@ auth.getProjectId().then(result => {
 });
 
 // setup tracing and monitoring OTel providers
-import setupTelemetry from './setup';
+import {setupTelemetry, fastifyOtelInstrumentation} from './setup.js';
 setupTelemetry();
 
-import { trace, context } from '@opentelemetry/api';
+import {trace, context, metrics} from "@opentelemetry/api";
 function getCurrentSpan() {
     const current_span = trace.getSpan(context.active());
     return {
@@ -25,23 +25,28 @@ function getCurrentSpan() {
     };
 };
 
-const opentelemetry = require("@opentelemetry/api");
-const meter = opentelemetry.metrics.getMeter("o11y/demo/nodejs");
+const meter = metrics.getMeter("o11y/demo/nodejs");
 const counter = meter.createCounter("model_call_counter");
 
 import path from 'path';
+import { fileURLToPath } from 'url';
 import Fastify from 'fastify'
-const fastify = Fastify({})
+import fastifyStatic from '@fastify/static';
 
-fastify.register(require('@fastify/static'), {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const fastify = Fastify({});
+fastify.register(fastifyStatic, {
     root: path.join(__dirname, 'static')
-})
+});
+await fastify.register(fastifyOtelInstrumentation.plugin());
 
 fastify.get('/', function (req, reply) {
     reply.sendFile('index.html')
-})
+});
 
 fastify.get('/facts', async function (request, reply) {
+    try {
     const animal = request.query.animal || 'dog';
     const prompt = `Give me 10 fun facts about ${animal}. Return this as html without backticks.`
     const resp = await generativeModel.generateContent(prompt);
@@ -58,6 +63,10 @@ fastify.get('/facts', async function (request, reply) {
     counter.add(1, { animal: animal });
     const html = resp.response.candidates[0].content.parts[0].text;
     reply.type('text/html').send(html);
+}
+catch (error) {
+    reply.type('text/html').send(error);
+}
 })
 
 const PORT = parseInt(process.env.PORT || '8080');

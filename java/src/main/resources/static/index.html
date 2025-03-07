@@ -1,31 +1,127 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>10 Fun facts from Gemini</title>
+    <title>10 Fun Facts from Gemini</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #202124; /* Dark gray background */
+            color: #e8eaed; /* Light gray text */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #8ab4f8; /* Light blue for heading */
+            margin-bottom: 30px;
+        }
+
+        #input-container {
+            display: flex;
+            gap: 10px; /* Spacing between input and button */
+            width: 100%;
+            max-width: 500px; /* Limit width for better readability */
+            margin-bottom: 20px;
+        }
+
+        #input-text {
+            flex: 1; /* Take up available space */
+            padding: 12px 16px;
+            border: none;
+            border-radius: 24px; /* Rounded corners */
+            background-color: #3c4043; /* Slightly lighter gray */
+            color: #e8eaed;
+            font-size: 16px;
+            outline: none; /* Remove default focus outline */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+            transition: box-shadow 0.3s ease;
+        }
+
+        #input-text:focus {
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3); /* More prominent shadow on focus */
+        }
+
+        #input-text::placeholder {
+            color: #9aa0a6; /* Lighter gray for placeholder */
+        }
+
+        #send-button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 24px;
+            background-color: #8ab4f8; /* Light blue button */
+            color: #202124; /* Dark text on button */
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        #send-button:hover {
+            background-color: #9ebcf9; /* Slightly lighter blue on hover */
+        }
+
         #response-container {
             margin-top: 20px;
-            border: 1px solid #ccc;
-            padding: 10px;
-            display: none;
-            /* Initially hidden */
+            border-radius: 24px;
+            padding: 20px;
+            background-color: #3c4043;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+            display: none; /* Initially hidden */
+            overflow: hidden; /* Hide overflowing content during loading */
         }
 
         .error-message {
-            color: red;
+            color: #f44336; /* Red for error */
             margin-top: 10px;
+        }
+
+        /* Loading Spinner Styles */
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #8ab4f8; /* Blue */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto; /* Center the spinner */
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
 
 <body>
 
-    <input type="text" id="input-text" placeholder="Your animal">
-    <button id="send-button">Send</button>
+    <h1>10 Fun Facts from Gemini</h1>
+
+    <div id="input-container">
+        <input type="text" id="input-text" placeholder="Your animal">
+        <button id="send-button">Send</button>
+    </div>
 
     <div id="response-container">
-    </div>
+        </div>
 
     <script>
         const sendButton = document.getElementById('send-button');
@@ -39,6 +135,13 @@
             responseContainer.innerHTML = '';
             responseContainer.style.display = 'none';
 
+            // Show the loading spinner *before* the fetch
+            const loader = document.createElement('div');
+            loader.className = 'loader';
+            responseContainer.appendChild(loader);
+            responseContainer.style.display = 'block'; // Show container with loader
+
+
             try {
                 const url = `/facts?animal=${encodeURIComponent(inputValue)}`;
 
@@ -48,6 +151,7 @@
 
                 if (response.ok) {
                     const htmlResponse = await response.text();
+                    // Remove the loader *before* adding new content
                     responseContainer.innerHTML = htmlResponse; // Set the new content
                     responseContainer.style.display = 'block'; // Show after content is set
                 } else {
@@ -60,12 +164,11 @@
         });
 
         function displayError(message) {
+            // Clear existing content (including loader) *before* adding the error.
+            responseContainer.innerHTML = '';
             const errorDiv = document.createElement('div');
             errorDiv.className = 'error-message';
             errorDiv.textContent = message;
-
-            // Clear existing content *before* adding the new error message.
-            responseContainer.innerHTML = '';
             responseContainer.appendChild(errorDiv);
             responseContainer.style.display = 'block';
         }

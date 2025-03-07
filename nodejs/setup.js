@@ -1,19 +1,19 @@
 import opentelemetry from "@opentelemetry/api";
-import registerInstrumentations from '@opentelemetry/instrumentation';
-import NodeTracerProvider from '@opentelemetry/sdk-trace-node';
+import {registerInstrumentations} from '@opentelemetry/instrumentation';
+import {NodeTracerProvider} from '@opentelemetry/sdk-trace-node';
 import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { AlwaysOnSampler, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import Resource from '@opentelemetry/resources';
-import ATTR_SERVICE_NAME from '@opentelemetry/semantic-conventions';
-import FastifyInstrumentation from '@opentelemetry/instrumentation-fastify';
-import HttpInstrumentation from '@opentelemetry/instrumentation-http';
-import TraceExporter from '@google-cloud/opentelemetry-cloud-trace-exporter';
-import MetricExporter from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
-import GcpDetectorSync from '@google-cloud/opentelemetry-resource-util';
+import {Resource} from '@opentelemetry/resources';
+import {ATTR_SERVICE_NAME} from '@opentelemetry/semantic-conventions';
+import pkg from '@fastify/otel';
+const {FastifyOtelInstrumentation} = pkg;
+import {HttpInstrumentation} from '@opentelemetry/instrumentation-http';
+import {TraceExporter} from '@google-cloud/opentelemetry-cloud-trace-exporter';
+import {MetricExporter} from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
+import {GcpDetectorSync} from '@google-cloud/opentelemetry-resource-util';
 
-module.exports = { setupTelemetry };
-
-function setupTelemetry() {
+export const fastifyOtelInstrumentation = new FastifyOtelInstrumentation({ servername: process.env.K_SERVICE }); 
+export const setupTelemetry = function() {
     const gcpResource = new Resource({
         [ATTR_SERVICE_NAME]: process.env.K_SERVICE,
     }).merge(new GcpDetectorSync().detect())
@@ -29,11 +29,10 @@ function setupTelemetry() {
     registerInstrumentations({
         tracerProvider: tracerProvider,
         instrumentations: [
-            // Express instrumentation expects HTTP layer to be instrumented
             new HttpInstrumentation(),
-            new FastifyInstrumentation(),
         ],
     });
+    fastifyOtelInstrumentation.setTracerProvider(tracerProvider);
     // Initialize the OpenTelemetry APIs to use the NodeTracerProvider bindings
     tracerProvider.register();
 
