@@ -54,7 +54,11 @@ func main() {
 		os.Exit(1)
 	}
 	defer client.Close()
-	model = client.GenerativeModel("gemini-1.5-flash-001")
+	modelName := os.Getenv("MODEL_NAME")
+	if modelName == "" {
+		modelName = "gemini-2.5-flash"
+	}
+	model = client.GenerativeModel(modelName)
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.Dir("./static")))
 	mux.Handle("/facts", wireHttpHandler("/facts", factsHandler))
@@ -70,12 +74,21 @@ func main() {
 	}
 }
 
-func factsHandler(w http.ResponseWriter, r *http.Request) {
-	animal := r.URL.Query().Get("animal")
-	if animal == "" {
-		animal = "dog"
+func getSubject(query url.Values) string {
+	v := r.URL.Query().Get("subject")
+	if v != "" {
+		return v
 	}
+	// for backward compatability check 'animal' query attribute
+	v = r.URL.Query().Get("animal")
+	if (v != "" )
+		return v
+	}
+	return "dog"
+}
 
+func factsHandler(w http.ResponseWriter, r *http.Request) {
+	subject := getSubject(r.URL.Query())
 	prompt := fmt.Sprintf("Give me 10 fun facts about %s. Convert result to HTML format without markdown backticks.", animal)
 	resp, err := model.GenerateContent(r.Context(), genai.Text(prompt))
 	if err != nil {
