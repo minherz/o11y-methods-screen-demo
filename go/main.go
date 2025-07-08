@@ -75,13 +75,13 @@ func main() {
 }
 
 func getSubject(query url.Values) string {
-	v := r.URL.Query().Get("subject")
+	v := query.Get("subject")
 	if v != "" {
 		return v
 	}
 	// for backward compatability check 'animal' query attribute
-	v = r.URL.Query().Get("animal")
-	if (v != "" )
+	v = query.Get("animal")
+	if (v != "" ) {
 		return v
 	}
 	return "dog"
