@@ -74,13 +74,13 @@ func main() {
 	}
 }
 
-func getSubject(query url.Values) string {
-	v := query.Get("subject")
+func getSubject(r *http.Request) string {
+	v := r.URL.Query().Get("subject")
 	if v != "" {
 		return v
 	}
 	// for backward compatability check 'animal' query attribute
-	v = query.Get("animal")
+	v = r.URL.Query().Get("animal")
 	if (v != "" ) {
 		return v
 	}
@@ -88,8 +88,8 @@ func getSubject(query url.Values) string {
 }
 
 func factsHandler(w http.ResponseWriter, r *http.Request) {
-	subject := getSubject(r.URL.Query())
-	prompt := fmt.Sprintf("Give me 10 fun facts about %s. Convert result to HTML format without markdown backticks.", animal)
+	subject := getSubject(r)
+	prompt := fmt.Sprintf("Give me 10 fun facts about %s. Convert result to HTML format without markdown backticks.", subject)
 	resp, err := model.GenerateContent(r.Context(), genai.Text(prompt))
 	if err != nil {
 		w.WriteHeader(http.StatusTooManyRequests)
@@ -99,7 +99,7 @@ func factsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.ErrorContext(r.Context(), "Failed to marshal response to JSON", slog.Any("error", err))
 	} else {
-		slog.DebugContext(r.Context(), "content is generated", slog.String("animal", animal),
+		slog.DebugContext(r.Context(), "content is generated", slog.String("subject", subject),
 			slog.String("prompt", prompt), slog.String("response", string(jsonBytes)))
 	}
 	if len(resp.Candidates) > 0 && len(resp.Candidates[0].Content.Parts) > 0 {
