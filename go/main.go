@@ -81,7 +81,7 @@ func getSubject(r *http.Request) string {
 	}
 	// for backward compatability check 'animal' query attribute
 	v = r.URL.Query().Get("animal")
-	if (v != "" ) {
+	if v != "" {
 		return v
 	}
 	return "dog"
@@ -93,6 +93,7 @@ func factsHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := model.GenerateContent(r.Context(), genai.Text(prompt))
 	if err != nil {
 		w.WriteHeader(http.StatusTooManyRequests)
+		fmt.Fprint(w, err.Error())
 		return
 	}
 	jsonBytes, err := json.Marshal(resp)

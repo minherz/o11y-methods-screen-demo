@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/propagators/autoprop"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -20,7 +21,9 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	cloudmetric "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
-	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/oauth"
 
 	"cloud.google.com/go/compute/metadata"
 )
@@ -116,25 +119,43 @@ func setupTelemetry(ctx context.Context) (shutdown func(context.Context) error, 
 		ctx,
 		resource.WithDetectors(gcp.NewDetector()),
 		resource.WithTelemetrySDK(),
-		resource.WithAttributes(semconv.ServiceNameKey.String(os.Getenv("K_SERVICE"))),
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String(os.Getenv("K_SERVICE")),
+			attribute.String("gcp.project_id", projectID),
+		),
+	)
+
+	if err2 != nil {
+		err = errors.Join(err2, shutdown(ctx))
+		return
+	}
+	otel.SetTextMapPropagator(autoprop.NewTextMapPropagator())
+
+	// Retrieve and store Google application-default credentials
+	creds, err2 := oauth.NewApplicationDefault(ctx)
+	if err2 != nil {
+		err = errors.Join(err2, shutdown(ctx))
+		return
+	}
+
+	// Initialize the OTLP gRPC exporter
+	texporter, err2 := otlptracegrpc.New(
+		ctx,
+		otlptracegrpc.WithEndpoint("telemetry.googleapis.com:443"),
+		otlptracegrpc.WithDialOption(grpc.WithPerRPCCredentials(creds)),
 	)
 	if err2 != nil {
 		err = errors.Join(err2, shutdown(ctx))
 		return
 	}
-
-	otel.SetTextMapPropagator(autoprop.NewTextMapPropagator())
-
-	texporter, err2 := cloudtrace.New(cloudtrace.WithProjectID(projectID))
-	if err2 != nil {
-		err = errors.Join(err2, shutdown(ctx))
-		return
-	}
+	// initialize OpenTelemetry tracer provdier
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithResource(res),
 		sdktrace.WithBatcher(texporter))
 	shutdownFuncs = append(shutdownFuncs, tp.Shutdown)
+	// configure OpenTelemetry SDK instance to use the tracer provider
+	// configured with OTLP exporter
 	otel.SetTracerProvider(tp)
 
 	mexporter, err2 := cloudmetric.New(cloudmetric.WithProjectID(projectID))
