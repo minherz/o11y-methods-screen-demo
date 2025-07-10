@@ -57,7 +57,7 @@ class HelloController {
     @PostConstruct
     public void init() {
         vertexAI = new VertexAI(projectId, getRegion());
-        model = new GenerativeModel("gemini-1.5-flash", vertexAI);
+        model = new GenerativeModel(System.getenv().getOrDefault("MODEL_NAME", "gemini-2.5-flash"), vertexAI);
     }
 
     @PreDestroy
@@ -66,11 +66,11 @@ class HelloController {
     }
 
     @GetMapping("/facts")
-    public String getFacts(@RequestParam(defaultValue = "dog") String animal) throws IOException {
-        var prompt = "Give me 10 fun facts about " + animal + ". Return this as html without backticks.";
+    public String getFacts(@RequestParam(defaultValue = "dog") String subject) throws IOException {
+        var prompt = "Give me 10 fun facts about " + subject + ". Return this as html without backticks.";
         var response = model.generateContent(prompt);
         LOGGER.atDebug()
-                .addKeyValue("animal", animal)
+                .addKeyValue("subject", subject)
                 .addKeyValue("prompt", prompt)
                 .addKeyValue("response", response)
                 .log("Content is generated");
