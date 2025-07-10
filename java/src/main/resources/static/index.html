@@ -139,10 +139,10 @@
 
 <body>
 
-    <h1>10 Fun Facts from Gemini</h1>
+    <h1>10 Fun Facts from Gemini about:</h1>
 
     <div id="input-container">
-        <input type="text" id="input-text" placeholder="Your animal">
+        <input type="text" id="input-text" placeholder="Your subject">
         <button id="send-button">Send</button>
     </div>
 
@@ -169,7 +169,7 @@
 
 
             try {
-                const url = `/facts?animal=${encodeURIComponent(inputValue)}`;
+                const url = `/facts?subject=${encodeURIComponent(inputValue)}`;
 
                 const response = await fetch(url, {
                     method: 'GET',
