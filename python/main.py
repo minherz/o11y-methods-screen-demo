@@ -24,17 +24,21 @@ requests_counter = meter.create_counter(
 
 @app.route('/')
 def index():
-    return render_template('index.html') 
+    return send_from_directory('static', 'index.html', mimetype='text/html')
+
+@app.route('/favicon.ico')
+def index():
+    return send_from_directory('static', 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.route('/facts')
 def fun_facts():
     vertexai.init(project=project, location=region)
-    model = GenerativeModel('gemini-1.5-flash')
-    animal = request.args.get('animal', 'dog') 
-    prompt = f'Give me 10 fun facts about {animal}. Return this as html without backticks.'
+    model = GenerativeModel(os.environ.get('MODEL_NAME', 'gemini-2.5-flash'))
+    subject = request.args.get('subject', 'dog')
+    prompt = f'Give me 10 fun facts about {subject}. Return this as html without backticks.'
     response = model.generate_content(prompt)
     json_fields = {
-         'animal': animal,
+         'subject': subject,
          'prompt': prompt,
          'response': response.to_dict(),
     }
