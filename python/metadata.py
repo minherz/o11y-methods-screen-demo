@@ -40,9 +40,8 @@ def resource_project():
 def resource_region():
     global _region_id
     if not _region_id:
-        s = _retrieve_metadata_server(_REGION_ID)
-        last = s.rfind('/')
-        if last >= 0 and last +1 <= len(s):
-            _region_id = s[last+1:]
-        _region_id = s
+        _region_id = _retrieve_metadata_server(_REGION_ID)
+        last = _region_id.rfind('/')
+        if last >= 0 and last+1 <= len(_region_id):
+            _region_id = _region_id[last+1:]
     return _region_id
