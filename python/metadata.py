@@ -1,12 +1,12 @@
-import requests
+import os, requests
 
 _METADATA_URL = "http://metadata.google.internal/computeMetadata/v1/"
 _METADATA_HEADERS = {"Metadata-Flavor": "Google"}
 _REGION_ID = "instance/region"
 _PROJECT_ID = "project/project-id"
 
-project_id = ''
-region_id = ''
+_project_id = os.getenv('GOOGLE_CLOUD_PROJECT')
+_region_id = os.getenv('LOCATION_ID')
 
 def _retrieve_metadata_server(metadata_key, timeout=5):
     """Retrieve the metadata key in the metadata server.
@@ -32,15 +32,17 @@ def _retrieve_metadata_server(metadata_key, timeout=5):
     return ''
 
 def resource_project():
-    if not project_id:
-        project_id = _retrieve_metadata_server(_PROJECT_ID)
-    return project_id
+    global _project_id
+    if not _project_id:
+        _project_id = _retrieve_metadata_server(_PROJECT_ID)
+    return _project_id
 
 def resource_region():
-    if not region_id:
+    global _region_id
+    if not _region_id:
         s = _retrieve_metadata_server(_REGION_ID)
         last = s.rfind('/')
         if last >= 0 and last +1 <= len(s):
-            region_id = s[last+1:]
-        region_id = s
-    return region_id
+            _region_id = s[last+1:]
+        _region_id = s
+    return _region_id
