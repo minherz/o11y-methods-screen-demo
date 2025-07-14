@@ -1,6 +1,8 @@
 import os
 
+from datetime import datetime, date
 import json, logging
+from metadata import resource_project
 from opentelemetry import metrics, trace
 from opentelemetry.exporter.cloud_monitoring import CloudMonitoringMetricsExporter
 from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
@@ -8,9 +10,14 @@ from opentelemetry.resourcedetector.gcp_resource_detector import GoogleCloudReso
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from opentelemetry.sdk.resources import get_aggregated_resources, Resource, CLOUD_ACCOUNT_ID, SERVICE_NAME
+from opentelemetry.sdk.resources import get_aggregated_resources, Resource, SERVICE_NAME
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 import sys
+
+def json_serial(obj):
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -22,7 +29,7 @@ class JsonFormatter(logging.Formatter):
             "logging.googleapis.com/spanId": trace.format_span_id(span.get_span_context().span_id),            
         }
         json_log_object.update(getattr(record, 'json_fields', {}))
-        return json.dumps(json_log_object)
+        return json.dumps(json_log_object, default=json_serial)
 
 logger = logging.getLogger(__name__)
 sh = logging.StreamHandler(sys.stdout)
@@ -57,5 +64,5 @@ trace_provider.add_span_processor(processor)
 trace.set_tracer_provider(trace_provider)
 
 def google_trace_id_format(trace_id: int) -> str:
-    project_id = resource.attributes[CLOUD_ACCOUNT_ID]
+    project_id = resource_project()
     return f'projects/{project_id}/traces/{trace.format_trace_id(trace_id)}'

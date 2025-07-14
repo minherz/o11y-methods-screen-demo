@@ -5,6 +5,9 @@ _METADATA_HEADERS = {"Metadata-Flavor": "Google"}
 _REGION_ID = "instance/region"
 _PROJECT_ID = "project/project-id"
 
+project_id = ''
+region_id = ''
+
 def _retrieve_metadata_server(metadata_key, timeout=5):
     """Retrieve the metadata key in the metadata server.
 
@@ -29,11 +32,15 @@ def _retrieve_metadata_server(metadata_key, timeout=5):
     return ''
 
 def resource_project():
-    return _retrieve_metadata_server(_PROJECT_ID)
+    if not project_id:
+        project_id = _retrieve_metadata_server(_PROJECT_ID)
+    return project_id
 
 def resource_region():
-    s = _retrieve_metadata_server(_REGION_ID)
-    last = s.rfind('/')
-    if last >= 0 and last +1 <= len(s):
-        return s[last+1:]
-    return s
+    if not region_id:
+        s = _retrieve_metadata_server(_REGION_ID)
+        last = s.rfind('/')
+        if last >= 0 and last +1 <= len(s):
+            region_id = s[last+1:]
+        region_id = s
+    return region_id
