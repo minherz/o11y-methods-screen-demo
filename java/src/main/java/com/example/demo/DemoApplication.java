@@ -21,10 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.google.cloud.ServiceOptions;
 import com.google.cloud.MetadataConfig;
-import com.google.cloud.vertexai.VertexAI;
-import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.generativeai.GenerativeModel;
-import com.google.cloud.vertexai.generativeai.ResponseHandler;
+import com.google.genai.Client;
 
 @SpringBootApplication
 public class DemoApplication {
@@ -40,8 +37,8 @@ public class DemoApplication {
 @RestController
 class HelloController {
     private final String projectId = ServiceOptions.getDefaultProjectId();
-    private VertexAI vertexAI;
-    private GenerativeModel model;
+    private Client vertexAI;
+    private String model;
     private final Logger LOGGER = LoggerFactory.getLogger(HelloController.class);
     private static final String INSTRUMENTATION_NAME = "o11y/demo/java";
     private static final Attributes LANGUAGE_ATTR = Attributes.of(AttributeKey.stringKey("language"), "java");
@@ -56,8 +53,12 @@ class HelloController {
 
     @PostConstruct
     public void init() {
-        vertexAI = new VertexAI(projectId, getRegion());
-        model = new GenerativeModel(System.getenv().getOrDefault("MODEL_NAME", "gemini-2.5-flash"), vertexAI);
+        vertexAI = Client.builder()
+                .project(projectId)
+                .location(getRegion())
+                .vertexAI(true)
+                .build();
+        model = System.getenv().getOrDefault("MODEL_NAME", "gemini-2.5-flash");
     }
 
     @PreDestroy
@@ -68,25 +69,25 @@ class HelloController {
     @GetMapping("/facts")
     public String getFacts(@RequestParam(defaultValue = "dog") String subject) throws IOException {
         var prompt = "Give me 10 fun facts about " + subject + ". Return this as html without backticks.";
-        var response = model.generateContent(prompt);
+        var response = vertexAI.models.generateContent(model, prompt, null);
         LOGGER.atDebug()
                 .addKeyValue("subject", subject)
                 .addKeyValue("prompt", prompt)
                 .addKeyValue("response", response)
                 .log("Content is generated");
         counter.add(1, LANGUAGE_ATTR);
-        return ResponseHandler.getText(response);
+        return response.text();
     }
 
-	private String getRegion() {
-		var region = MetadataConfig.getAttribute("instance/region");
-		if (region == null) {
-			return "us-west1";
-		}
-		int idx = region.lastIndexOf("/");
-		if (idx >= 0) {
-			return region.substring(idx+1);
-		}
-		return region;
-	}
+    private String getRegion() {
+        var region = MetadataConfig.getAttribute("instance/region");
+        if (region == null) {
+            return "us-west1";
+        }
+        int idx = region.lastIndexOf("/");
+        if (idx >= 0) {
+            return region.substring(idx + 1);
+        }
+        return region;
+    }
 }
