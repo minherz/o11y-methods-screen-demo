@@ -19,8 +19,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.google.cloud.ServiceOptions;
-import com.google.cloud.MetadataConfig;
 import com.google.genai.Client;
 
 @SpringBootApplication
@@ -36,7 +34,6 @@ public class DemoApplication {
 
 @RestController
 class HelloController {
-    private final String projectId = ServiceOptions.getDefaultProjectId();
     private Client vertexAI;
     private String model;
     private final Logger LOGGER = LoggerFactory.getLogger(HelloController.class);
@@ -54,8 +51,8 @@ class HelloController {
     @PostConstruct
     public void init() {
         vertexAI = Client.builder()
-                .project(projectId)
-                .location(getRegion())
+                .project(Metadata.projectId())
+                .location(Metadata.region())
                 .vertexAI(true)
                 .build();
         model = System.getenv().getOrDefault("MODEL_NAME", "gemini-2.5-flash");
@@ -77,17 +74,5 @@ class HelloController {
                 .log("Content is generated");
         counter.add(1, LANGUAGE_ATTR);
         return response.text();
-    }
-
-    private String getRegion() {
-        var region = MetadataConfig.getAttribute("instance/region");
-        if (region == null) {
-            return "us-west1";
-        }
-        int idx = region.lastIndexOf("/");
-        if (idx >= 0) {
-            return region.substring(idx + 1);
-        }
-        return region;
     }
 }

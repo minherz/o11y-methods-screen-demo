@@ -30,8 +30,7 @@ public class LoggingEventGoogleCloudEncoder extends EncoderBase<ILoggingEvent> {
     private final String projectId;
     private final String tracePrefix;
 
-    // need custom adapter to serialize java.util.Optional values used in
-    // com.google.genai
+    // custom adapter to serialize java.util.Optional values
     static class OptionalAdapter implements JsonSerializer<Optional<?>>, JsonDeserializer<Optional<?>> {
         @Override
         public JsonElement serialize(Optional<?> src, Type typeOfSrc, JsonSerializationContext context) {
@@ -47,7 +46,24 @@ public class LoggingEventGoogleCloudEncoder extends EncoderBase<ILoggingEvent> {
         @Override
         public Optional<?> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
                 throws JsonParseException {
-            // TODO Auto-generated method stub
+            throw new UnsupportedOperationException("Unimplemented method 'deserialize'");
+        }
+    }
+
+    // custom adapter to serialize java.time.Instant values
+    static class InstantAdapter implements JsonSerializer<Instant>, JsonDeserializer<Instant> {
+        @Override
+        public JsonElement serialize(Instant src, Type typeOfSrc, JsonSerializationContext context) {
+            if (src != null) {
+                return context.serialize(src.toString());
+            } else {
+                return context.serialize(null);
+            }
+        }
+
+        @Override
+        public Instant deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+                throws JsonParseException {
             throw new UnsupportedOperationException("Unimplemented method 'deserialize'");
         }
     }
@@ -55,6 +71,7 @@ public class LoggingEventGoogleCloudEncoder extends EncoderBase<ILoggingEvent> {
     public LoggingEventGoogleCloudEncoder() {
         this.gson = new GsonBuilder()
                 .registerTypeAdapter(Optional.class, new OptionalAdapter())
+                .registerTypeAdapter(Instant.class, new InstantAdapter())
                 .create();
         this.projectId = ServiceOptions.getDefaultProjectId();
         this.tracePrefix = "projects/" + (projectId == null ? "" : projectId) + "/traces/";
