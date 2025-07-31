@@ -1,18 +1,20 @@
 import opentelemetry from "@opentelemetry/api";
-import {registerInstrumentations} from '@opentelemetry/instrumentation';
-import {NodeTracerProvider} from '@opentelemetry/sdk-trace-node';
+import { registerInstrumentations } from '@opentelemetry/instrumentation';
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { AlwaysOnSampler, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import {Resource} from '@opentelemetry/resources';
-import {ATTR_SERVICE_NAME} from '@opentelemetry/semantic-conventions';
+import { Resource } from '@opentelemetry/resources';
+import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 import FastifyOtelInstrumentation from '@fastify/otel';
-import {HttpInstrumentation} from '@opentelemetry/instrumentation-http';
-import {TraceExporter} from '@google-cloud/opentelemetry-cloud-trace-exporter';
-import {MetricExporter} from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
-import {GcpDetectorSync} from '@google-cloud/opentelemetry-resource-util';
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import { TraceExporter } from '@google-cloud/opentelemetry-cloud-trace-exporter';
+import { MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
+import { GcpDetectorSync } from '@google-cloud/opentelemetry-resource-util';
+// import { diag, DiagConsoleLogger, DiagLogLevel } from "@opentelemetry/api";
+// diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
 
-export const fastifyOtelInstrumentation = new FastifyOtelInstrumentation({ servername: process.env.K_SERVICE }); 
-export const setupTelemetry = function() {
+export const fastifyOtelInstrumentation = new FastifyOtelInstrumentation({ servername: process.env.K_SERVICE });
+export const setupTelemetry = function () {
     const gcpResource = new Resource({
         [ATTR_SERVICE_NAME]: process.env.K_SERVICE,
     }).merge(new GcpDetectorSync().detect())
@@ -21,7 +23,6 @@ export const setupTelemetry = function() {
         resource: gcpResource,
         sampler: new AlwaysOnSampler(),
         spanProcessors: [new SimpleSpanProcessor(new TraceExporter({
-            // will export all resource attributes that start with "service."
             resourceFilter: /^service\./
         }))],
     });
