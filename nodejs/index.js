@@ -2,23 +2,22 @@ import Fastify from 'fastify'
 import fastifyStatic from '@fastify/static';
 import { GoogleGenAI } from '@google/genai';
 import { GoogleAuth } from 'google-auth-library';
-import { setupTelemetry, fastifyOtelInstrumentation } from './setup.js';
+import { setupTelemetry } from './setup.js';
 import { context, metrics, trace } from '@opentelemetry/api';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-let genAI, traceIdPrefix;
+const fastify = Fastify({});
 const auth = new GoogleAuth();
-auth.getProjectId().then(result => {
-    genAI = new GoogleGenAI({
-        vertexai: true,
-        project: result,
-        location: 'us-central1',
-    });
-    traceIdPrefix = `projects/${result}/traces/`;
-});
+const projectId = await auth.getProjectId();
 
-setupTelemetry();
+const genAI = new GoogleGenAI({
+    vertexai: true,
+    project: projectId,
+    location: 'us-central1',
+});
+const traceIdPrefix = `projects/${projectId}/traces/`;
+await setupTelemetry(projectId);
 
 const meter = metrics.getMeter("o11y/demo/nodejs");
 const counter = meter.createCounter("model_call_counter");
@@ -44,11 +43,9 @@ function getCurrentSpan() {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const fastify = Fastify({});
 fastify.register(fastifyStatic, {
     root: path.join(__dirname, 'static')
 });
-await fastify.register(fastifyOtelInstrumentation.plugin());
 
 fastify.get('/', function (req, reply) {
     reply.sendFile('index.html')

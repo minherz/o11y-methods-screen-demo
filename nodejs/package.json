@@ -14,7 +14,6 @@
     "@fastify/otel": "^0.5.1",
     "@fastify/static": "^8.2.0",
     "@google-cloud/opentelemetry-cloud-monitoring-exporter": "^0.20.0",
-    "@google-cloud/opentelemetry-cloud-trace-exporter": "^2.4.1",
     "@google-cloud/opentelemetry-resource-util": "^2.4.0",
     "@google/genai": "^1.11.0",
     "@grpc/grpc-js": "^1.13.4",
