@@ -1,45 +1,51 @@
-import { VertexAI } from '@google-cloud/vertexai';
+import Fastify from 'fastify'
+import fastifyStatic from '@fastify/static';
+import { GoogleGenAI } from '@google/genai';
 import { GoogleAuth } from 'google-auth-library';
+import { setupTelemetry } from './setup.js';
+import { context, metrics, trace } from '@opentelemetry/api';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-let generativeModel, traceIdPrefix;
+const fastify = Fastify({});
 const auth = new GoogleAuth();
-auth.getProjectId().then(result => {
-    const vertex = new VertexAI({ project: result });
-    generativeModel = vertex.getGenerativeModel({
-        model: process.env.MODEL_NAME || 'gemini-2.5-flash'
-    });
-    traceIdPrefix = `projects/${result}/traces/`;
+const projectId = await auth.getProjectId();
+
+const genAI = new GoogleGenAI({
+    vertexai: true,
+    project: projectId,
+    location: 'us-central1',
 });
-
-// setup tracing and monitoring OTel providers
-import { setupTelemetry, fastifyOtelInstrumentation } from './setup.js';
-setupTelemetry();
-
-import { trace, context, metrics } from "@opentelemetry/api";
-function getCurrentSpan() {
-    const current_span = trace.getSpan(context.active());
-    return {
-        trace_id: current_span.spanContext().traceId,
-        span_id: current_span.spanContext().spanId,
-        flags: current_span.spanContext().traceFlags
-    };
-};
+const traceIdPrefix = `projects/${projectId}/traces/`;
+await setupTelemetry(projectId);
 
 const meter = metrics.getMeter("o11y/demo/nodejs");
 const counter = meter.createCounter("model_call_counter");
 
-import path from 'path';
-import { fileURLToPath } from 'url';
-import Fastify from 'fastify'
-import fastifyStatic from '@fastify/static';
+function getCurrentSpan() {
+    const current_span = trace.getSpan(context.active());
+    if (current_span) {
+        const ctx = current_span.spanContext();
+        if (ctx) {
+            return {
+                trace_id: ctx.traceId,
+                span_id: ctx.spanId,
+                flags: ctx.traceFlags
+            };
+        }
+    }
+    return {
+        trace_id: "undefined",
+        span_id: "undefined",
+        flags: "0"
+    };
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const fastify = Fastify({});
 fastify.register(fastifyStatic, {
     root: path.join(__dirname, 'static')
 });
-await fastify.register(fastifyOtelInstrumentation.plugin());
 
 fastify.get('/', function (req, reply) {
     reply.sendFile('index.html')
@@ -49,19 +55,22 @@ fastify.get('/facts', async function (request, reply) {
     try {
         const subject = (request.query.subject || request.query.animal) || 'dog';
         const prompt = `Give me 10 fun facts about ${subject}. Return this as html without backticks.`
-        const resp = await generativeModel.generateContent(prompt);
+        const resp = await genAI.models.generateContent({
+            model: process.env.MODEL_NAME || 'gemini-2.5-flash',
+            contents: prompt,
+        });
         const span = getCurrentSpan();
         console.log(JSON.stringify({
             'severity': 'DEBUG',
             'message': 'Content is generated',
             'subject': subject,
             'prompt': prompt,
-            'response': resp.response,
+            'response': resp,
             "logging.googleapis.com/trace": traceIdPrefix + span.trace_id,
             "logging.googleapis.com/spanId": span.span_id,
         }));
         counter.add(1, { language: 'nodejs' });
-        const html = resp.response.candidates[0].content.parts[0].text;
+        const html = resp.text;
         reply.type('text/html').send(html);
     }
     catch (error) {
@@ -75,5 +84,5 @@ fastify.listen({ host: '0.0.0.0', port: PORT }, function (err, address) {
         console.error(err);
         process.exit(1);
     }
-    console.log(`codelab-genai: listening on ${address}`);
+    console.log(`server is listening on ${address}`);
 })
