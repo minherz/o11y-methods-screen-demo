@@ -7,23 +7,72 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 
 import com.google.cloud.ServiceOptions;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
+import java.lang.reflect.Type;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.Optional;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.context.Context;
 
-
-public class LoggingEventGoogleCloudEncoder extends EncoderBase<ILoggingEvent>  {
+public class LoggingEventGoogleCloudEncoder extends EncoderBase<ILoggingEvent> {
     private static final byte[] EMPTY_BYTES = new byte[0];
     private final Gson gson;
     private final String projectId;
     private final String tracePrefix;
 
+    // custom adapter to serialize java.util.Optional values
+    static class OptionalAdapter implements JsonSerializer<Optional<?>>, JsonDeserializer<Optional<?>> {
+        @Override
+        public JsonElement serialize(Optional<?> src, Type typeOfSrc, JsonSerializationContext context) {
+            // If the Optional contains a value, serialize the value itself
+            if (src.isPresent()) {
+                return context.serialize(src.get());
+            } else {
+                // If the Optional is empty, serialize as null
+                return context.serialize(null);
+            }
+        }
+
+        @Override
+        public Optional<?> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+                throws JsonParseException {
+            throw new UnsupportedOperationException("Unimplemented method 'deserialize'");
+        }
+    }
+
+    // custom adapter to serialize java.time.Instant values
+    static class InstantAdapter implements JsonSerializer<Instant>, JsonDeserializer<Instant> {
+        @Override
+        public JsonElement serialize(Instant src, Type typeOfSrc, JsonSerializationContext context) {
+            if (src != null) {
+                return context.serialize(src.toString());
+            } else {
+                return context.serialize(null);
+            }
+        }
+
+        @Override
+        public Instant deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+                throws JsonParseException {
+            throw new UnsupportedOperationException("Unimplemented method 'deserialize'");
+        }
+    }
+
     public LoggingEventGoogleCloudEncoder() {
-        this.gson = new Gson();
+        this.gson = new GsonBuilder()
+                .registerTypeAdapter(Optional.class, new OptionalAdapter())
+                .registerTypeAdapter(Instant.class, new InstantAdapter())
+                .create();
         this.projectId = ServiceOptions.getDefaultProjectId();
         this.tracePrefix = "projects/" + (projectId == null ? "" : projectId) + "/traces/";
     }
@@ -65,17 +114,17 @@ public class LoggingEventGoogleCloudEncoder extends EncoderBase<ILoggingEvent>  
     private static String severityFor(Level level) {
         switch (level.toInt()) {
             case Level.TRACE_INT:
-            return "DEBUG";
+                return "DEBUG";
             case Level.DEBUG_INT:
-            return "DEBUG";
+                return "DEBUG";
             case Level.INFO_INT:
-            return "INFO";
+                return "INFO";
             case Level.WARN_INT:
-            return "WARNING";
+                return "WARNING";
             case Level.ERROR_INT:
-            return "ERROR";
+                return "ERROR";
             default:
-            return "DEFAULT";
+                return "DEFAULT";
         }
     }
 }

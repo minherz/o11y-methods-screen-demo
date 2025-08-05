@@ -1,12 +1,12 @@
 import os
-from flask import Flask, render_template, request
+from flask import Flask, send_from_directory, request
 from setup import logger
 from metadata import resource_project, resource_region
 from opentelemetry import metrics
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
-import vertexai
-from vertexai.generative_models import GenerativeModel
+from google import genai
+from google.genai import errors
 
 METRIC_LABELS = {'language': 'python'}
 
@@ -27,20 +27,24 @@ def index():
     return send_from_directory('static', 'index.html', mimetype='text/html')
 
 @app.route('/favicon.ico')
-def index():
+def favicon():
     return send_from_directory('static', 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.route('/facts')
 def fun_facts():
-    vertexai.init(project=project, location=region)
-    model = GenerativeModel(os.environ.get('MODEL_NAME', 'gemini-2.5-flash'))
+    client = genai.Client(vertexai=True, project=project, location=region)
+    model = os.environ.get('MODEL_NAME', 'gemini-2.5-flash')
     subject = request.args.get('subject', 'dog')
     prompt = f'Give me 10 fun facts about {subject}. Return this as html without backticks.'
-    response = model.generate_content(prompt)
+    try:
+        response = client.models.generate_content(model=model, contents=prompt)
+    except errors.APIError as e:
+        return e.message, e.code
+
     json_fields = {
          'subject': subject,
          'prompt': prompt,
-         'response': response.to_dict(),
+         'response': response.model_dump(),
     }
     logger.debug('content is generated', extra={'json_fields': json_fields})
     requests_counter.add(1, METRIC_LABELS)
