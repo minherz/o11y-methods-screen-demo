@@ -10,14 +10,15 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"cloud.google.com/go/vertexai/genai"
+	"google.golang.org/genai"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
 
-var model *genai.GenerativeModel
+var modelName string
+var client *genai.Client
 var counter metric.Int64Counter
 var MetricLabels []attribute.KeyValue = []attribute.KeyValue{attribute.Key("language").String("go")}
 
@@ -47,18 +48,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	var client *genai.Client
-	client, err = genai.NewClient(ctx, projectID, region)
+	client, err = genai.NewClient(ctx, &genai.ClientConfig{
+		Project:  projectID,
+		Location: region,
+		Backend:  genai.BackendVertexAI,
+	})
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed initialize GenAI client", slog.Any("error", err))
 		os.Exit(1)
 	}
-	defer client.Close()
-	modelName := os.Getenv("MODEL_NAME")
+	modelName = os.Getenv("MODEL_NAME")
 	if modelName == "" {
 		modelName = "gemini-2.5-flash"
 	}
-	model = client.GenerativeModel(modelName)
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.Dir("./static")))
 	mux.Handle("/facts", wireHttpHandler("/facts", factsHandler))
@@ -90,7 +92,7 @@ func getSubject(r *http.Request) string {
 func factsHandler(w http.ResponseWriter, r *http.Request) {
 	subject := getSubject(r)
 	prompt := fmt.Sprintf("Give me 10 fun facts about %s. Convert result to HTML format without markdown backticks.", subject)
-	resp, err := model.GenerateContent(r.Context(), genai.Text(prompt))
+	resp, err := client.Models.GenerateContent(r.Context(), modelName, genai.Text(prompt), nil)
 	if err != nil {
 		w.WriteHeader(http.StatusTooManyRequests)
 		fmt.Fprint(w, err.Error())
@@ -105,7 +107,7 @@ func factsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(resp.Candidates) > 0 && len(resp.Candidates[0].Content.Parts) > 0 {
 		counter.Add(r.Context(), 1, metric.WithAttributes(MetricLabels...))
-		htmlContent := resp.Candidates[0].Content.Parts[0]
+		htmlContent := resp.Candidates[0].Content.Parts[0].Text
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		fmt.Fprint(w, htmlContent)
 	}
